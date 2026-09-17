@@ -4,11 +4,10 @@
 
 
 // everytime B1 is clicked it should return a value
-int random_number = 99;
+int number = 0;
 int roll_dice()
 {
-	int max_number = 6;
-	int min_number = 1;
-	random_number = rand() % (max_number - min_number + 1) + min_number;
-	return random_number;
+	number = (number % 6) + 1;
+
+	return number;
 }

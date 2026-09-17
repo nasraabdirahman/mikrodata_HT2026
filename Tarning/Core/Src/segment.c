@@ -5,13 +5,16 @@ const uint16_t sseg[10] = { 0b01011111, 0b000000110, 0b10011011, 0b10001111, 0b1
 const uint16_t sseg_err = 0x1AC;
 void put_on_sseg(uint8_t dec_nbr)
 {
-	GPIOC->ODR = sseg[dec_nbr];
 
-	if(dec_nbr > 6)
+
+	if(dec_nbr <= 6)
+	{
+		GPIOC->ODR = sseg[dec_nbr];
+	}
+	else
 	{
 		GPIOC->ODR = sseg_err;
 	}
-
 }
 
 
