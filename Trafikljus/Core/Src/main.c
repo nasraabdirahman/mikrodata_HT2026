@@ -62,7 +62,7 @@ static void MX_GPIO_Init(void);
 int8_t output[6] = {11111,10001, 11010, 11010, 00101};
 //output[0] = s_init
 //output[1] = s_people_walk
-//output[2] = s_car_about_to_stop
+//output[2] = s_car_about_to_drive
 //output[3] = s_people_walk
 //output[4] = s_people_stop
 void set_traffic_lights(enum state s)
@@ -70,8 +70,12 @@ void set_traffic_lights(enum state s)
 	switch(s)
 	{
 		case s_init:
-			return GPIOC ->ODR = output[1]; break;
-		case s_
+			return GPIOC ->ODR = output[s_init]; break;
+		case s_people_walk:
+			return GPIOC->ODR = output[s_people_walk]; break;
+		case s_car_about_to_drive:
+			return GPIOC->ODR = output[s_car_about_to_drive]; break;
+		case
 
 	}
 }
