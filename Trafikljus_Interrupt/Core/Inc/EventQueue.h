@@ -1,13 +1,12 @@
 /*
- * enum.h
+ * EventQueue.h
  *
- *  Created on: 17 sep. 2026
+ *  Created on: 18 sep. 2026
  *      Author: nasra
  */
 
-#ifndef INC_ENUM_H_
-#define INC_ENUM_H_
-
+#ifndef INC_EVENTQUEUE_H_
+#define INC_EVENTQUEUE_H_
 
 enum event
 {
@@ -28,7 +27,8 @@ enum state
 	s_people_stop, // red
 	s_people_pushed_button
 };
-#endif /* INC_ENUM_H_ */
 
 void evq_push_back(enum event e);
 enum event evq_pop_front();
+
+#endif /* INC_EVENTQUEUE_H_ */
