@@ -19,13 +19,13 @@ enum event
 enum state
 {
 	s_init,
-	//this state is when B1 is pushed
-	s_car_go,
 	/* others go here */
-	s_car_drive, //greed
-	s_car_about_to_drive, // red yellow
-	s_car_stopped, //red
-	s_people_walk,
-	s_people_stop
+	s_car_stop, //red
+	s_car_standing_by, // Red Yellow
+	s_people_walk, //green
+	s_car_about_to_stop, //Yellow
+	s_car_go, //greed
+	s_people_stop, // red
+	s_people_pushed_button
 };
 #endif /* INC_ENUM_H_ */

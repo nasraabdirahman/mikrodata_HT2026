@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "enum.h"
 
 /* USER CODE END Includes */
@@ -59,26 +60,45 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN 0 */
 //car = RED YELLOW GREEN
 //people = RED GREEN
-int8_t output[6] = {11111,10001, 11010, 11010, 00101};
+
 //output[0] = s_init
-//output[1] = s_people_walk
-//output[2] = s_car_about_to_drive
-//output[3] = s_people_walk
-//output[4] = s_people_stop
+//output[1] = s_car_stop = 10001
+// output[2] = s_car_standing_by = 10110
+//output[3] = s_people_walk = 10001
+//output[4] = s_car_about_to_stop = 10010
+//output[5] = s_car_go = 01001
+//output[6] = s_people_stop = 01100
+//output[7] = s_people_pushed_button = 01011
 void set_traffic_lights(enum state s)
 {
+	const int8_t output[8] = {0b11111, 0b10001, 0b01011,0b10001,0b01010, 0b01100, 0b01100, 0b01001};
 	switch(s)
 	{
 		case s_init:
-			return GPIOC ->ODR = output[s_init]; break;
+			GPIOC ->ODR = output[s_init]; break;
+		case s_car_stop:
+			GPIOC -> ODR = output[s_car_stop]; break;
+		case s_car_standing_by:
+			 GPIOC -> ODR = output[s_car_standing_by]; break;
 		case s_people_walk:
-			return GPIOC->ODR = output[s_people_walk]; break;
-		case s_car_about_to_drive:
-			return GPIOC->ODR = output[s_car_about_to_drive]; break;
-		case
-
+			 GPIOC->ODR = output[s_people_walk]; break;
+		case s_car_about_to_stop:
+			 GPIOC->ODR = output[s_car_about_to_stop]; break;
+		case s_car_go:
+			 GPIOC ->ODR = output[s_car_go]; break;
+		case s_people_stop:
+			 GPIOC -> ODR = output[s_people_stop]; break;
+		case s_people_pushed_button:
+			 GPIOC -> ODR = output[s_people_pushed_button]; break;
+		default:
+			break;
 	}
 }
+int is_button_pressed()
+{
+	return GPIOC->IDR & (1 << 13);
+}
+
 
 /* USER CODE END 0 */
 
@@ -90,7 +110,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	enum state st = s_init;
+	enum event ev = ev_none;
+	uint32_t ticks_left_in_state = 0;
+	uint32_t  curr_tick, last_tick = 0;
+	bool temp = false;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -112,6 +136,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
+  int last_press = is_button_pressed();
 
   /* USER CODE END 2 */
 
@@ -120,11 +145,125 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
+	  int curr_press = is_button_pressed();
+	  bool button_ev = curr_press && !last_press;
+	  last_press = curr_press;
+	  curr_tick = HAL_GetTick();
+	  uint32_t delta = curr_tick - last_tick;
+	   last_tick = curr_tick;
+	  ev = ev_none;
+	  if(ticks_left_in_state > 0)
+	  {
+		  if(delta >= ticks_left_in_state)
+		  {
+			  ticks_left_in_state = 0;
+			  ev = ev_state_timeout;
+		  }
+		  else
+		  {
+			  ticks_left_in_state -= delta;
+		  }
+		  last_tick = curr_tick;
+	  }
+	  if(button_ev)
+	  {
+		  ev = ev_button_push;
+	  }
+	  	switch(st)
+	  	{
+	  	case s_init:
+	  		if(ev == ev_button_push)
+	  		{
+	  			st = s_people_walk;
+	  		} break;
+	  	case s_car_stop:
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_button_push)
+	  		{
+	  			temp = false;
+	  			st = s_car_standing_by;
+	  		} break;
+	  	case s_car_standing_by:
+
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_state_timeout)
+	  		{
+	  			temp = false;
+	  			st = s_people_stop;
+	  		}
+	  		break;
+	  	case s_people_walk:
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_state_timeout)
+	  		{
+	  			temp = false;
+	  			st = s_car_standing_by;
+	  		} break;
+
+	  	case s_car_about_to_stop:
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_state_timeout)
+	  		{
+	  			temp = false;
+	  			st = s_people_walk;
+	  		}
+	  		break;
+	  	case s_car_go:
+	  		if(ev == ev_button_push)
+	  		{
+	  			st = s_car_about_to_stop;
+	  		} break;
+	  	case s_people_stop:
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_state_timeout)
+	  		{
+	  			temp = false;
+	  			st = s_car_go;
+	  		}
+	  		break;
+
+	  	case s_people_pushed_button:
+	  		if(temp == false)
+	  		{
+	  			ticks_left_in_state = 5000;
+	  			temp = true;
+	  		}
+	  		if(ev == ev_state_timeout)
+	  		{
+	  			temp = false;
+	  			st = s_car_standing_by;
+	  		} break;
+	  	default:
+	  		break;
+	  	}
+	  	set_traffic_lights(st);
+
+
   }
   /* USER CODE END 3 */
 }
+
 
 /**
   * @brief System Clock Configuration
@@ -180,7 +319,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void)
+void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
@@ -194,8 +333,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, DC_1_Pin|DC_2_Pin|DC_3_Pin|DP_1_Pin
-                          |DP_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, DC_RED_Pin|DC_YELLOW_Pin|DC_GREEN_Pin|DP_RED_Pin
+                          |DP_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
@@ -206,10 +345,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DC_1_Pin DC_2_Pin DC_3_Pin DP_1_Pin
-                           DP_2_Pin */
-  GPIO_InitStruct.Pin = DC_1_Pin|DC_2_Pin|DC_3_Pin|DP_1_Pin
-                          |DP_2_Pin;
+  /*Configure GPIO pins : DC_RED_Pin DC_YELLOW_Pin DC_GREEN_Pin DP_RED_Pin
+                           DP_GREEN_Pin */
+  GPIO_InitStruct.Pin = DC_RED_Pin|DC_YELLOW_Pin|DC_GREEN_Pin|DP_RED_Pin
+                          |DP_GREEN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
