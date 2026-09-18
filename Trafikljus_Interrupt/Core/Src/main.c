@@ -130,10 +130,9 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  int last_press = is_button_pressed();
 
   /* USER CODE END 2 */
-  int last_press = is_button_pressed();
-  evq_push_back(ev_none);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -165,7 +164,7 @@ int main(void)
 	  {
 		  evq_push_back(ev_button_push);
 	  }
-	  ev = evq_pop_front()
+	  ev = evq_pop_front();
 	  switch(st)
 	  	  	{
 	  	  	case s_init:
