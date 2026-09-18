@@ -85,10 +85,29 @@ void set_traffic_lights(enum state s)
 			break;
 	}
 }
+int systick_count = 0;
+uint32_t ticks_left_in_state = 0;
 
 int is_button_pressed()
 {
 	return GPIOC->IDR & (1 << 13);
+}
+void my_systick_handler()
+{
+	systick_count++;
+	if (systick_count == 1000)
+	{
+		HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+		  systick_count = 0;
+	}
+	if(ticks_left_in_state > 0)
+	{
+		ticks_left_in_state--;
+		if(ticks_left_in_state == 0)
+		{
+			evq_push_back(ev_state_timeout);
+		}
+	}
 }
 
 
@@ -104,7 +123,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 	enum state st = s_init;
 	enum event ev = ev_none;
-	uint32_t ticks_left_in_state = 0;
 	uint32_t  curr_tick, last_tick = 0;
 	bool temp = false;
 
@@ -144,22 +162,6 @@ int main(void)
 	  int curr_press = is_button_pressed();
 	  bool button_ev = curr_press && !last_press;
 	  last_press = curr_press;
-	  curr_tick = HAL_GetTick();
-	  uint32_t delta = curr_tick - last_tick;
-	  last_tick = curr_tick;
-	  if(ticks_left_in_state > 0)
-	  {
-		  if(delta >= ticks_left_in_state)
-		  {
-			  ticks_left_in_state = 0;
-			  evq_push_back(ev_state_timeout);
-		  }
-		  else
-		  {
-			  ticks_left_in_state -= delta;
-		  }
-		  last_tick = curr_tick;
-	  }
 	  if(button_ev)
 	  {
 		  evq_push_back(ev_button_push);
@@ -403,6 +405,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD4_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
