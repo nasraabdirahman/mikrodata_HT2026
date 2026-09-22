@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "stm32l4xx_it.h"
 
 /* USER CODE END Includes */
 
@@ -62,27 +63,18 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 void set_traffic_lights(enum state s)
 {
-	const int8_t output[8] = {0b11111, 0b10001, 0b01011,0b10001,0b01010, 0b01100, 0b01100, 0b01001};
+	const int8_t output[8] = {0b11111, 0b10001, 0b01001,0b01011,0b01100, 0b01100, 0b01010, 0b01001};
 	switch(s)
 	{
-		case s_init:
-			GPIOC ->ODR = output[s_init]; break;
-		case s_car_stop:
-			GPIOC -> ODR = output[s_car_stop]; break;
-		case s_car_standing_by:
-			 GPIOC -> ODR = output[s_car_standing_by]; break;
-		case s_people_walk:
-			 GPIOC->ODR = output[s_people_walk]; break;
-		case s_car_about_to_stop:
-			 GPIOC->ODR = output[s_car_about_to_stop]; break;
-		case s_car_go:
-			 GPIOC ->ODR = output[s_car_go]; break;
-		case s_people_stop:
-			 GPIOC -> ODR = output[s_people_stop]; break;
-		case s_people_pushed_button:
-			 GPIOC -> ODR = output[s_people_pushed_button]; break;
-		default:
-			break;
+		case s_init: GPIOC -> ODR = output[s_init] ; break;
+		case s_people_walk: GPIOC -> ODR = output[s_people_walk] ; break;
+		case s_car_standing_by: GPIOC -> ODR = output[s_car_standing_by] ; break;
+		case s_people_stop: GPIOC -> ODR = output[s_people_stop] ; break;
+		case s_car_go: GPIOC -> ODR = output[s_car_go] ; break;
+		case s_pushed_wait: GPIOC -> ODR = output[s_pushed_wait] ; break;
+		case s_car_is_stopping:  GPIOC -> ODR = output[s_car_is_stopping] ; break;
+		case s_car_stop: GPIOC -> ODR = output[s_car_stop] ; break;
+		default: break;
 	}
 }
 int systick_count = 0;
@@ -169,90 +161,85 @@ int main(void)
 	  ev = evq_pop_front();
 	  switch(st)
 	  	  	{
-	  	  	case s_init:
-	  	  		if(ev == ev_button_push)
-	  	  		{
-	  	  			st = s_people_walk;
-	  	  		} break;
-	  	  	case s_car_stop:
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_button_push)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_car_standing_by;
-	  	  		} break;
-	  	  	case s_car_standing_by:
-
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_state_timeout)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_people_stop;
-	  	  		}
-	  	  		break;
-	  	  	case s_people_walk:
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_state_timeout)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_car_standing_by;
-	  	  		} break;
-
-	  	  	case s_car_about_to_stop:
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_state_timeout)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_people_walk;
-	  	  		}
-	  	  		break;
-	  	  	case s_car_go:
-	  	  		if(ev == ev_button_push)
-	  	  		{
-	  	  			st = s_car_about_to_stop;
-	  	  		} break;
-	  	  	case s_people_stop:
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_state_timeout)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_car_go;
-	  	  		}
-	  	  		break;
-
-	  	  	case s_people_pushed_button:
-	  	  		if(temp == false)
-	  	  		{
-	  	  			ticks_left_in_state = 5000;
-	  	  			temp = true;
-	  	  		}
-	  	  		if(ev == ev_state_timeout)
-	  	  		{
-	  	  			temp = false;
-	  	  			st = s_car_standing_by;
-	  	  		} break;
-	  	  	default:
-	  	  		break;
+			case s_init:
+				if (ev == ev_button_push) {
+					st = s_people_walk;
+					last_tick = HAL_GetTick();
+				}
+				break;
+			case s_people_walk:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_car_standing_by;
+					temp = false;
+				}
+				break;
+			case s_car_standing_by:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_people_stop;
+					temp = false;
+				}
+				break;
+			case s_people_stop:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_car_go;
+					temp = false;
+				}
+				break;
+			case s_car_go:
+				if (ev == ev_button_push){
+					st = s_pushed_wait;
+					last_tick = HAL_GetTick();
+				}
+				break;
+			case s_pushed_wait:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_car_is_stopping;
+					temp = false;
+				}
+				break;
+			case s_car_is_stopping:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_car_stop;
+					temp = false;
+				}
+				break;
+			case s_car_stop:
+				if(temp == false)
+					{
+						ticks_left_in_state = 5000;
+						temp = true;
+					}
+				if (ev == ev_state_timeout) {
+					st = s_people_walk;
+					temp = false;
+				}
+				break;
+			default: break;
 	  	  	}
 	  	  	set_traffic_lights(st);
   }
