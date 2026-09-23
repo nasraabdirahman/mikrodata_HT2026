@@ -164,7 +164,6 @@ int main(void)
 			case s_init:
 				if (ev == ev_button_push) {
 					st = s_people_walk;
-					last_tick = HAL_GetTick();
 				}
 				break;
 			case s_people_walk:
@@ -203,7 +202,6 @@ int main(void)
 			case s_car_go:
 				if (ev == ev_button_push){
 					st = s_pushed_wait;
-					last_tick = HAL_GetTick();
 				}
 				break;
 			case s_pushed_wait:

@@ -17,17 +17,17 @@ enum event
 };
 
 enum state
-{
-	s_init,
-	/* others go here */
-	s_car_stop, //red
-	s_car_standing_by, // Red Yellow
-	s_people_walk, //green
-	s_car_about_to_stop, //Yellow
-	s_car_go, //greed
-	s_people_stop, // red
-	s_people_pushed_button
-};
+ {
+	 s_init,
+	 s_people_walk,
+	 s_car_standing_by,
+	 s_people_stop,
+	 s_car_go,
+	 s_pushed_wait,
+	 s_car_is_stopping,
+	 s_car_stop,
+	 /* others go here */
+ };
 #endif /* INC_ENUM_H_ */
 
 void evq_push_back(enum event e);
