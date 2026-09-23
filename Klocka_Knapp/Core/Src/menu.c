@@ -47,7 +47,7 @@ int uart_print_menu(int ret)
 				return 2;
 			}
 			else {
-				return uart_print_bad_choice(-1);
+				return -1;
 			}
 			break;
 		default:
@@ -55,7 +55,12 @@ int uart_print_menu(int ret)
 	}
 }
 
-int uart_print_bad_choice(int error)
+void uart_print_bad_choice(int ret)
 {
-	return error;
+	char buffer[100];
+
+	if(ret != 1 && ret != 2)
+	{
+		sprintf("Wrong choice. Choose either 1 or 2");
+	}
 }

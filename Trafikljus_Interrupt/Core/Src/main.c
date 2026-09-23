@@ -82,6 +82,7 @@ uint32_t ticks_left_in_state = 0;
 
 int is_button_pressed()
 {
+	evq_push_back(ev_button_push);
 	return GPIOC->IDR & (1 << 13);
 }
 void my_systick_handler()
@@ -140,7 +141,6 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  int last_press = is_button_pressed();
 
   /* USER CODE END 2 */
 
@@ -151,13 +151,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  int curr_press = is_button_pressed();
-	  bool button_ev = curr_press && !last_press;
-	  last_press = curr_press;
-	  if(button_ev)
-	  {
-		  evq_push_back(ev_button_push);
-	  }
 	  ev = evq_pop_front();
 	  switch(st)
 	  	  	{
