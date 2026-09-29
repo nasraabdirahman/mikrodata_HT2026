@@ -22,11 +22,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "quad_sseg.h"
+#include "menu.h"
+#include "clock.h"
+#include "button.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#define BOUNCE_DELAY_MS 4
 
 /* USER CODE END Includes */
 
@@ -42,20 +44,16 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-enum state {
-	s_press, s_release
-};
-enum state s = s_release;
+
+
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-UART_HandleTypeDef huart2;
-uint16_t button_exti_count = 0;
-uint16_t button_debounced_count = 0;
 
 /* USER CODE END PV */
 
@@ -63,78 +61,16 @@ uint16_t button_debounced_count = 0;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void clock_mode() {
-	/*** init segment ***/
-	/*** main loop ***/
-	while (1) {
-	}
-}
 
-void button_mode() {
-	/*** init segment ***/
-	/*** main loop ***/
-	GPIO_PinState MY_BTN_pressed;
-	while (1) {
-		MY_BTN_pressed = HAL_GPIO_ReadPin(MY_BTN_GPIO_Port, MY_BTN_Pin);
-		qs_put_big_num(b1_pressed ? button_exti_count: button_debounced_count);
-	}
-}
 
-int uart_get_menu_choice() {
-	char str[1] = { '\0' };
-	uint16_t str_len = 1;
-	HAL_UART_Receive(&huart2, (uint8_t*) str, str_len,
-	HAL_MAX_DELAY);
-	int ret = -1;
-	sscanf(str, "%d", &ret);
-	return ret;
-}
-char buffer[100];
-void uart_print_menu() {
-	snprintf(buffer, 100,
-			"Choose your destiny\r\n\n 1. Clock Mode\r\n 2. Button Mode\r\n");
-	HAL_UART_Transmit(&huart2, (uint8_t*) buffer, 100, HAL_MAX_DELAY);
-}
 
-void uart_print_bad_choice(int ret) {
-	char buffer[100];
-
-	if (ret != 1 && ret != 2) {
-		sprintf(buffer, "Wrong choice. Choose either 1 or 2");
-	}
-}
-uint32_t last_time = 0;
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	uint32_t current_time = HAL_GetTick();
-	switch (s) {
-	case s_press:
-		if(GPIO_Pin == MY_BTN_Pin)
-		{
-			if(current_time - last_time >= BOUNCE_DELAY_MS)
-			{
-				last_time = current_time;
-				s = s_release;
-			}
-		}
-		break;
-	case s_release:
-		if(current_time - last_time >= BOUNCE_DELAY_MS)
-		{
-			last_time = current_time;
-			button_debounced_count++;
-			s = s_press;
-
-		}
-		break;
-	}
-	button_exti_count++;
-}
 
 /* USER CODE END 0 */
 
@@ -168,6 +104,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -184,7 +121,7 @@ int main(void)
 		{
 			switch (menu_choice) {
 			case 1:
-				//clock_mode();
+				clock_mode();
 				break;
 			case 2:
 				button_mode();
@@ -244,6 +181,53 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 2000;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 20000;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
 }
 
 /**
