@@ -16,14 +16,15 @@
 enum state_clock s_clock = s_start;
 
 extern TIM_HandleTypeDef htim1;
-int hours = 23;
-int minutes = 59;
-int seconds = 59;
+int hours = 0;
+int minutes = 0;
+int seconds = 0;
 bool colon = false;
 int blue_button;
 
 void clock_mode() {
 	/*** init segment ***/
+	HAL_TIM_Base_Start_IT(&htim1);
 	/*** main loop ***/
 	while (1) {
 		switch (s_clock) {
@@ -50,6 +51,7 @@ void clock_mode() {
 		case s_ms:
 			if (seconds == 60) {
 				minutes++;
+				seconds = 0;
 				if (minutes == 60) {
 					hours++;
 					minutes = 0;
@@ -69,6 +71,9 @@ void clock_mode() {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	seconds += 0.5;
 	colon = !colon;
+	if(colon == false)
+	{
+		seconds += 1;
+	}
 }
