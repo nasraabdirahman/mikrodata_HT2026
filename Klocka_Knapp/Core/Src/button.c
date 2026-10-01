@@ -20,10 +20,12 @@ void button_mode() {
 	/*** init segment ***/
 	/*** main loop ***/
 	GPIO_PinState MY_BTN_pressed;
+	int b1_pressed;
 	while (1) {
 		MY_BTN_pressed = HAL_GPIO_ReadPin(MY_BTN_GPIO_Port, MY_BTN_Pin);
+		b1_pressed = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
 		qs_put_big_num(
-				MY_BTN_pressed ? button_exti_count : button_debounced_count);
+				b1_pressed ? button_exti_count : button_debounced_count);
 	}
 }
 

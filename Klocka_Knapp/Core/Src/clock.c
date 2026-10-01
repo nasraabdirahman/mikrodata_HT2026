@@ -31,7 +31,7 @@ void clock_mode() {
 		case s_start:
 			hours = 23;
 			minutes = 59;
-			seconds = 59;
+			seconds = 45;
 			qs_put_digits(hours / 10, hours % 10, minutes / 10, minutes % 10,
 					colon);
 			s_clock = s_ms;
