@@ -14,7 +14,7 @@
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim6;
 extern struct clock_data my_clock;
-extern bool cooldown;
+extern volatile bool cooldown;
 void cd_set(struct clock_data *pcd, uint8_t hrs, uint8_t min, uint8_t sec) {
 	//set values
 	pcd->hours = hrs;
@@ -41,11 +41,18 @@ void _time(struct clock_data *pcd)
 			}
 }
 
+void cd_tick(struct clock_data *pcd)
+{
+	pcd->seconds++;
+	_time(pcd);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	cooldown = true;
-	my_clock.seconds +=1;
-	cd_set(&my_clock, my_clock.hours, my_clock.minutes, my_clock.seconds);
-	_time(&my_clock);
+	if(htim->Instance == TIM6)
+	{
+		cd_tick(&my_clock);
+		cooldown = true;
+	}
 }
 
 void uart_print_cd(UART_HandleTypeDef *huart, struct clock_data *pcd) {

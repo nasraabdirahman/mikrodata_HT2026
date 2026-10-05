@@ -1,18 +1,18 @@
-
 #include "lcd.h"
 #include "main.h"
-
+#include <stdint.h>
+#include <stdarg.h>
 // first:   D7 D6 D5 D4 BT E  RW RS
 // second:  D3 D2 D1 D0 BT E  RW RS
-
 
 /*
  * my = mu = micro
  * Holds for an amount of microseconds.
  */
-void My_Delay(uint32_t mysec)
-{
-//	HAL_Delay( 1 + (mysec / 1000) );
+extern TextLCDType lcd;
+uint32_t dly = 5 * 1000 * 1000; // 5 second
+void My_Delay(uint32_t mysec) {
+	HAL_Delay(1 + (mysec / 1000));
 }
 
 #define BIT_BT   0x08
@@ -43,8 +43,7 @@ GPIO_PinState RW = GPIO_PIN_RESET;
  *  When sending a byte, use this twice, sending D7-D4 the first time
  *  and D3-D0 the second time.
  ****************************************************************************/
-void TextLCD_SendNibbleWithPulseOnE(TextLCDType * hlcd, uint8_t data)
-{
+void TextLCD_SendNibbleWithPulseOnE(TextLCDType *hlcd, uint8_t data) {
 	/***** Put nibble when E is low *****/
 	data = data & INV_E;
 	HAL_I2C_Master_Transmit(hlcd->hi2c, hlcd->device_address, &data, 1, 1000);
@@ -60,12 +59,7 @@ void TextLCD_SendNibbleWithPulseOnE(TextLCDType * hlcd, uint8_t data)
 	HAL_I2C_Master_Transmit(hlcd->hi2c, hlcd->device_address, &data, 1, 1000);
 }
 
-
-void TextLCD_SendByte(
-		TextLCDType   * hlcd,
-		uint8_t         data,
-		GPIO_PinState   RS)
-{
+void TextLCD_SendByte(TextLCDType *hlcd, uint8_t data, GPIO_PinState RS) {
 	// Place the data bits in the top four bits. The lowest four will
 	// be for control.
 	uint8_t d_lo = (data & 0x0F) << 4;
@@ -77,18 +71,13 @@ void TextLCD_SendByte(
 	ctrl = (RS == GPIO_PIN_SET) ? (ctrl | BIT_RS) : (ctrl & INV_RS);
 	ctrl = (RW == GPIO_PIN_SET) ? (ctrl | BIT_RW) : (ctrl & INV_RW);
 
-	TextLCD_SendNibbleWithPulseOnE( hlcd, (d_hi | ctrl) );
-	TextLCD_SendNibbleWithPulseOnE( hlcd, (d_lo | ctrl) );
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (d_hi | ctrl));
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (d_lo | ctrl));
 }
 
-
-
-void TextLCD_Init(
-		TextLCDType         *   hlcd,
-		I2C_HandleTypeDef   *   hi2c,
-		uint8_t                 device_address)
-{
-	hlcd->hi2c           = hi2c;
+void TextLCD_Init(TextLCDType *hlcd, I2C_HandleTypeDef *hi2c,
+		uint8_t device_address) {
+	hlcd->hi2c = hi2c;
 	hlcd->device_address = device_address;
 
 	uint8_t data = 0x30; // b# 0011 1000
@@ -96,12 +85,12 @@ void TextLCD_Init(
 
 	My_Delay(70000);
 
-	TextLCD_SendNibbleWithPulseOnE(hlcd, (data|ctrl) );
-	TextLCD_SendNibbleWithPulseOnE(hlcd, (data|ctrl) );
-	TextLCD_SendNibbleWithPulseOnE(hlcd, (data|ctrl) );
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (data | ctrl));
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (data | ctrl));
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (data | ctrl));
 
 	data = 0x20;
-	TextLCD_SendNibbleWithPulseOnE(hlcd, (data|ctrl) );
+	TextLCD_SendNibbleWithPulseOnE(hlcd, (data | ctrl));
 
 	// Finished setting up 4-bit mode. Let's configure display
 
@@ -116,54 +105,60 @@ void TextLCD_Init(
 	TextLCD_SendByte(hlcd, 0x0C, 0);
 }
 
-
-void TextLCD_SetBacklightFlag(GPIO_PinState bt)
-{
+void TextLCD_SetBacklightFlag(GPIO_PinState bt) {
 	BT = bt;
 }
 
-
-
-void TextLCD_Home		(TextLCDType * hlcd)
-{
-
+void TextLCD_Home(TextLCDType *hlcd) {
+	TextLCD_SendByte(hlcd, 0x02, GPIO_PIN_RESET);
+	//My_Delay(1520);
 }
 
-
-void TextLCD_Clear		(TextLCDType * hlcd)
-{
-
+void TextLCD_Clear(TextLCDType *hlcd) {
+	TextLCD_SendByte(hlcd, 0x02, GPIO_PIN_RESET);
 }
 
-void TextLCD_SetDDRAMAdr(TextLCDType * hlcd, uint8_t adr)
-{
-
+void TextLCD_SetDDRAMAdr(TextLCDType *hlcd, uint8_t adr) {
+	TextLCD_SendByte(hlcd, 0x80 | adr, GPIO_PIN_RESET);
 }
 
-
-void TextLCD_Position	(TextLCDType * hlcd, int col, int row)
-{
-
+void TextLCD_Position(TextLCDType *hlcd, int col, int row) {
+	if(col < 0 || col >= 16)
+	{
+		return;
+	}
+	if(row < 0 || row > 1)
+	{
+		return;
+	}
+	int address = col + 0x40 * row;
+	TextLCD_SetDDRAMAdr(hlcd, address);
+	My_Delay(dly);
 }
 
-void TextLCD_PutChar	(TextLCDType * hlcd, char c)
-{
+void TextLCD_PutChar(TextLCDType *hlcd, char c) {
+	TextLCD_SendByte(hlcd, c, GPIO_PIN_SET);
+	My_Delay(dly);
 }
 
-
-void TextLCD_PutStr		(TextLCDType * hlcd, char * str)
-{
-
+void TextLCD_PutStr(TextLCDType *hlcd, char *str) {
+	for (int i = 0; str[i] != '\0'; i++) {
+		TextLCD_SendByte(hlcd, str[i], GPIO_PIN_SET);
+	}
+	My_Delay(dly);
 }
-
-
-
-
 
 #if 0
 void TextLCD_Printf(TextLCDType *lcd, char *message, ...)
 {
-
+	char buffer[100];
+	va_list valist;
+	va_start(valist, message);
+	size_t size = vsnprintf(buffer, 0, message, valist);
+	vsnprintf(buffer, size, message, valist);
+	va_end(valist);
+	TextLCD_PutStr(lcd,buffer);
 }
+
 #endif
 
