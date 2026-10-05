@@ -9,9 +9,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim6;
 extern struct clock_data my_clock;
+extern bool cooldown;
 void cd_set(struct clock_data *pcd, uint8_t hrs, uint8_t min, uint8_t sec) {
 	//set values
 	pcd->hours = hrs;
@@ -21,6 +24,7 @@ void cd_set(struct clock_data *pcd, uint8_t hrs, uint8_t min, uint8_t sec) {
 
 void _time(struct clock_data *pcd)
 {
+
 	if (pcd->seconds == 60)
 			{
 				pcd->minutes++;
@@ -38,19 +42,14 @@ void _time(struct clock_data *pcd)
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	cooldown = true;
+	my_clock.seconds +=1;
+	cd_set(&my_clock, my_clock.hours, my_clock.minutes, my_clock.seconds);
 	_time(&my_clock);
-}
-void cd_tick(struct clock_data *pcd) {
-		HAL_TIM_Base_Start_IT(&htim6);
-		pcd->seconds++;
-		cd_set(pcd, pcd->hours, pcd->minutes, pcd->seconds++);
 }
 
 void uart_print_cd(UART_HandleTypeDef *huart, struct clock_data *pcd) {
-	char buffer[10];
-	cd_tick(&my_clock);
-	sprintf(buffer, "%d:%d:%d", pcd->hours, pcd->minutes, pcd->seconds);
-	HAL_UART_Transmit(&huart2, buffer,10,HAL_MAX_DELAY);
-
-	//HAL_UART_Transmit(&huart2, “Hello World!\r\n”, 13, 100);
+	char buffer[20];
+	sprintf(buffer, "%02d:%02d:%02d\r\n", pcd->hours, pcd->minutes, pcd->seconds);
+	HAL_UART_Transmit(&huart2, (uint8_t*) buffer,strlen(buffer),HAL_MAX_DELAY);
 }
