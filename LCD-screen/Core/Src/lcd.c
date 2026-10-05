@@ -12,7 +12,19 @@
 extern TextLCDType lcd;
 uint32_t dly = 5 * 1000 * 1000; // 5 second
 void My_Delay(uint32_t mysec) {
-	HAL_Delay(1 + (mysec / 1000));
+	// stoppa TIM2
+	  TIM2->CR1 &= ~(1 << 0);
+	  //notställ räknare
+	  TIM2->CNT = 0;
+	  //starta TIM2
+	  TIM2->CR1 |= (1 << 0);
+	  //vänta tills rätt antal mikrosekunder har gått
+	  while(TIM2->CNT <mysec)
+	  {
+
+	  }
+	  //stoppa TIM2
+	  TIM2->CR1 &= ~(1 << 0);
 }
 
 #define BIT_BT   0x08
