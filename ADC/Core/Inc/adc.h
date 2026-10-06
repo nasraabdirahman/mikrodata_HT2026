@@ -12,4 +12,5 @@
 uint16_t read_one_adc_value(ADC_HandleTypeDef *hadc1);
 float normalize_12bit(uint16_t x);
 float normalize_12bit_posneg(uint16_t x);
+float lm35_to_celsius(uint16_t lm35_reading);
 #endif /* INC_ADC_H_ */

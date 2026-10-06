@@ -25,6 +25,8 @@
 #include "lcd.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#define ADC_BUF_SIZE 1
 
 /* USER CODE END Includes */
 
@@ -55,6 +57,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 TextLCDType lcd;
+extern volatile uint16_t adc_buffer[ADC_BUF_SIZE];
+extern volatile int ready;
 volatile uint16_t temp = 0;
 float value1 = 0.0;
 float value2 = 0.0;
@@ -116,6 +120,7 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   TextLCD_Init(&lcd, &hi2c1, 0x4E);
+  HAL_ADC_Start_IT(&hadc1);
 	TextLCD_Clear(&lcd);
 	TextLCD_Position(&lcd, 0, 0);
 	char buffer1[10];
@@ -126,30 +131,35 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
-		temp = read_one_adc_value(&hadc1);
-		value1 = normalize_12bit(temp);
-		int convert1 = (int)(value1 * 100);
-		value2 = normalize_12bit_posneg(temp);
-		int convert2 = (int)(value2 * 100);
-		sprintf(buffer1, "+0.%02d", convert1);
-		if(convert2 < 0)
+		if(ready)
 		{
-		    int positive = -convert2;
-		    int whole = positive / 100;
-		    int decimal = positive % 100;
-		    sprintf(buffer2, "-%d.%02d", whole, decimal);
-		}
-		else
-		{
-		    int whole = convert2 / 100;
-		    int decimal = convert2 % 100;
-		    sprintf(buffer2, "+%d.%02d", whole, decimal);
+			ready = 0;
+			temp = adc_buffer[0];
+			value1 = normalize_12bit(temp);
+			value2 = normalize_12bit_posneg(temp);
+			int convert1 = (int)(value1 * 100);
+			int convert2 = (int)(value2 * 100);
+			sprintf(buffer1, "+0.%02d", convert1);
+			if(convert2 < 0)
+			{
+			    int positive = -convert2;
+			    int whole = positive / 100;
+			    int decimal = positive % 100;
+			    sprintf(buffer2, "-%d.%02d", whole, decimal);
+			}
+			else
+			{
+			    int whole = convert2 / 100;
+			    int decimal = convert2 % 100;
+			    sprintf(buffer2, "+%d.%02d", whole, decimal);
+			}
+
+			TextLCD_Position(&lcd, 0, 0);
+			TextLCD_PutStr(&lcd, buffer1);
+			TextLCD_Position(&lcd, 0, 1);
+			TextLCD_PutStr(&lcd, buffer2);
 		}
 
-		TextLCD_Position(&lcd, 0, 0);
-		TextLCD_PutStr(&lcd, buffer1);
-		TextLCD_Position(&lcd, 0, 1);
-		TextLCD_PutStr(&lcd, buffer2);
 
     /* USER CODE END WHILE */
 
@@ -234,7 +244,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -251,7 +261,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_640CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;

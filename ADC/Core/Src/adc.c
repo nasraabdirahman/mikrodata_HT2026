@@ -7,7 +7,14 @@
 #include "adc.h"
 #include <stdint.h>
 #include <stdio.h>
+#define ADC_BUF_SIZE 1
+#define JOY_X_IX 0
+#define JOY_Y_IX 1
+#define LM35_IX 2
 extern ADC_HandleTypeDef hadc1;
+volatile uint16_t adc_buffer[ADC_BUF_SIZE];
+static int adc_buf_ix = 0;
+volatile int ready = 0;
 uint16_t read_one_adc_value(ADC_HandleTypeDef *hadc) {
 	HAL_ADC_Start(hadc);
 	HAL_ADC_PollForConversion(hadc, 100);
@@ -36,5 +43,20 @@ float normalize_12bit_posneg(uint16_t x) //left
 		value = -(float)temp/2047;
 	}
 	return value;
+}
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+    if (hadc->Instance == ADC1)
+    {
+        adc_buffer[adc_buf_ix] = HAL_ADC_GetValue(hadc);
+
+        adc_buf_ix++;
+
+        if (adc_buf_ix >= ADC_BUF_SIZE)
+        {
+            adc_buf_ix = 0;
+            ready = 1;
+        }
+    }
 }
 
