@@ -49,6 +49,7 @@ ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart2;
 
@@ -67,6 +68,7 @@ static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,6 +113,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM2_Init();
   MX_USART2_UART_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   TextLCD_Init(&lcd, &hi2c1, 0x4E);
 	TextLCD_Clear(&lcd);
@@ -125,9 +128,24 @@ int main(void)
 	while (1) {
 		temp = read_one_adc_value(&hadc1);
 		value1 = normalize_12bit(temp);
+		int convert1 = (int)(value1 * 100);
 		value2 = normalize_12bit_posneg(temp);
-		sprintf(buffer1, "+%.2f", value1);
-		sprintf(buffer2, "+%.2f", value2);
+		int convert2 = (int)(value2 * 100);
+		sprintf(buffer1, "+0.%02d", convert1);
+		if(convert2 < 0)
+		{
+		    int positive = -convert2;
+		    int whole = positive / 100;
+		    int decimal = positive % 100;
+		    sprintf(buffer2, "-%d.%02d", whole, decimal);
+		}
+		else
+		{
+		    int whole = convert2 / 100;
+		    int decimal = convert2 % 100;
+		    sprintf(buffer2, "+%d.%02d", whole, decimal);
+		}
+
 		TextLCD_Position(&lcd, 0, 0);
 		TextLCD_PutStr(&lcd, buffer1);
 		TextLCD_Position(&lcd, 0, 1);
@@ -337,6 +355,44 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 2000;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 20000;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 

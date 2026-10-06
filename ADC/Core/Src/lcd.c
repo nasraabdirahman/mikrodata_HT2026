@@ -131,15 +131,17 @@ void TextLCD_SetBacklightFlag(GPIO_PinState bt) {
 
 void TextLCD_Home(TextLCDType *hlcd) {
 	TextLCD_SendByte(hlcd, 0x02, GPIO_PIN_RESET);
-	//My_Delay(1520);
+	My_Delay(2000);
 }
 
 void TextLCD_Clear(TextLCDType *hlcd) {
-	TextLCD_SendByte(hlcd, 0x02, GPIO_PIN_RESET);
+	TextLCD_SendByte(hlcd, 0x01, GPIO_PIN_RESET);
+	My_Delay(2000);
 }
 
 void TextLCD_SetDDRAMAdr(TextLCDType *hlcd, uint8_t adr) {
 	TextLCD_SendByte(hlcd, 0x80 | adr, GPIO_PIN_RESET);
+	My_Delay(40);
 }
 
 void TextLCD_Position(TextLCDType *hlcd, int col, int row) {
@@ -153,19 +155,19 @@ void TextLCD_Position(TextLCDType *hlcd, int col, int row) {
 	}
 	int address = col + 0x40 * row;
 	TextLCD_SetDDRAMAdr(hlcd, address);
-	My_Delay(dly);
+	My_Delay(40);
 }
 
 void TextLCD_PutChar(TextLCDType *hlcd, char c) {
 	TextLCD_SendByte(hlcd, c, GPIO_PIN_SET);
-	My_Delay(dly);
+	My_Delay(40);
 }
 
 void TextLCD_PutStr(TextLCDType *hlcd, char *str) {
 	for (int i = 0; str[i] != '\0'; i++) {
 		TextLCD_SendByte(hlcd, str[i], GPIO_PIN_SET);
+		My_Delay(40);
 	}
-	My_Delay(dly);
 }
 
 #if 0
