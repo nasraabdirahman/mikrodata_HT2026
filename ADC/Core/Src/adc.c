@@ -7,10 +7,10 @@
 #include "adc.h"
 #include <stdint.h>
 #include <stdio.h>
-#define ADC_BUF_SIZE 1
+#define ADC_BUF_SIZE 3
 #define JOY_X_IX 0
 #define JOY_Y_IX 1
-#define LM35_IX 2
+#define R_IX 1
 extern ADC_HandleTypeDef hadc1;
 volatile uint16_t adc_buffer[ADC_BUF_SIZE];
 static int adc_buf_ix = 0;
