@@ -10,7 +10,6 @@
  * Holds for an amount of microseconds.
  */
 extern TextLCDType lcd;
-uint32_t dly = 5 * 1000 * 1000; // 5 second
 void My_Delay(uint32_t mysec) {
 	// stoppa TIM2
 	  TIM2->CR1 &= ~(1 << 0);
@@ -123,7 +122,7 @@ void TextLCD_SetBacklightFlag(GPIO_PinState bt) {
 
 void TextLCD_Home(TextLCDType *hlcd) {
 	TextLCD_SendByte(hlcd, 0x02, GPIO_PIN_RESET);
-	//My_Delay(1520);
+	My_Delay(1520);
 }
 
 void TextLCD_Clear(TextLCDType *hlcd) {
@@ -145,19 +144,19 @@ void TextLCD_Position(TextLCDType *hlcd, int col, int row) {
 	}
 	int address = col + 0x40 * row;
 	TextLCD_SetDDRAMAdr(hlcd, address);
-	My_Delay(dly);
+	My_Delay(37);
 }
 
 void TextLCD_PutChar(TextLCDType *hlcd, char c) {
 	TextLCD_SendByte(hlcd, c, GPIO_PIN_SET);
-	My_Delay(dly);
+	My_Delay(37);
 }
 
 void TextLCD_PutStr(TextLCDType *hlcd, char *str) {
 	for (int i = 0; str[i] != '\0'; i++) {
 		TextLCD_SendByte(hlcd, str[i], GPIO_PIN_SET);
 	}
-	My_Delay(dly);
+	My_Delay(37);
 }
 
 #if 0
